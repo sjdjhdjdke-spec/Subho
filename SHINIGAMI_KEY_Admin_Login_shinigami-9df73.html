@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SHINIGAMI KEY</title>
+<style>
+:root{color-scheme:dark;--bg:#090b12;--panel:#121725;--line:#273149;--muted:#9aa7bd;--red:#ef3340;--green:#28c887}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% 0,#24152a 0,transparent 32%),var(--bg);color:#f4f6fb;font:15px system-ui,Arial,sans-serif}
+.wrap{max-width:1050px;margin:auto;padding:24px 16px 60px}.brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}.mark{width:44px;height:44px;border-radius:13px;background:linear-gradient(145deg,#ff4757,#7c1737);display:grid;place-items:center;font-weight:900;font-size:20px}.brand h1{font-size:21px;letter-spacing:2px;margin:0}.brand p{color:var(--muted);margin:3px 0 0;font-size:12px}
+.card{background:rgba(18,23,37,.96);border:1px solid var(--line);border-radius:17px;padding:20px;margin:14px 0;box-shadow:0 12px 40px #0003}.card h2{font-size:16px;margin:0 0 15px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+label{display:block;color:var(--muted);font-size:12px;margin:0 0 6px}input,textarea,select{width:100%;background:#0b101b;border:1px solid #303b52;color:#fff;border-radius:10px;padding:12px;font:inherit;outline:none}input:focus,textarea:focus{border-color:#e83c54}textarea{min-height:80px;resize:vertical}
+button{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer;background:#e6324b;color:white}button.secondary{background:#263148;color:#edf2ff}button.green{background:#167c59}button:disabled{opacity:.45;cursor:not-allowed}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}.muted{color:var(--muted);font-size:12px;line-height:1.5}.status{padding:10px 12px;border:1px solid var(--line);border-radius:10px;color:var(--muted);margin:12px 0}.status.ok{color:#7de2b5;border-color:#21694f}.status.err{color:#ff929b;border-color:#71333b}.hidden{display:none!important}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600}.pill{display:inline-block;padding:4px 8px;border-radius:30px;font-size:11px;background:#24344a}.pill.active{background:#124a38;color:#8cf0c1}.pill.inactive{background:#54232e;color:#ffabb2}.topline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.smallbtn{padding:7px 10px;font-size:12px}
+@media(max-width:560px){.wrap{padding:16px 12px}.card{padding:15px}th,td{padding:9px 5px;font-size:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand"><div class="mark">S</div><div><h1>SHINIGAMI KEY</h1><p>CONTROL CENTER · FIREBASE CONNECTED</p></div></header>
+  <div id="connection" class="status">Firebase setup pending — sign in to connect.</div>
+
+  <section id="loginCard" class="card">
+    <h2>Admin Login</h2>
+    <div class="grid">
+      <div><label for="username">Admin Username</label><input id="username" type="text" autocomplete="username" placeholder="shinigamiadmin"></div>
+      <div><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Password"></div>
+    </div>
+    <div class="actions"><button id="loginBtn">Sign in</button></div>
+    <p class="muted">Sign in with your Admin Username and the same password set for the Firebase Authentication account. Firebase Email/Password sign-in must be enabled.</p>
+  </section>
+
+  <main id="dashboard" class="hidden">
+    <section class="card topline"><div><h2 style="margin:0">Dashboard</h2><p class="muted" id="who"></p></div><button class="secondary" id="logoutBtn">Sign out</button></section>
+    <section class="card">
+      <h2>User Management</h2>
+      <div class="grid">
+        <div><label for="userId">User ID</label><input id="userId" placeholder="e.g. player_001"></div>
+        <div><label for="userName">Display name (optional)</label><input id="userName" placeholder="Player name"></div>
+        <div><label for="userStatus">Status</label><select id="userStatus"><option value="ACTIVE">ACTIVE</option><option value="INACTIVE">INACTIVE</option></select></div>
+      </div>
+      <div class="actions"><button id="saveUserBtn">Save user</button><button class="secondary" id="refreshBtn">Refresh users</button></div>
+      <div style="overflow:auto;margin-top:14px"><table><thead><tr><th>User ID</th><th>Name</th><th>Status</th><th>Action</th></tr></thead><tbody id="users"><tr><td colspan="4" class="muted">No users loaded.</td></tr></tbody></table></div>
+      <p class="muted">Database path used: <code>users/{userId}</code>. Each record stores name, status and updatedAt.</p>
+    </section>
+    <section class="card">
+      <h2>APK Update</h2>
+      <div class="grid">
+        <div><label for="version">Version name</label><input id="version" placeholder="1.0.1"></div>
+        <div><label for="apk">Select APK file</label><input id="apk" type="file" accept=".apk,application/vnd.android.package-archive"></div>
+      </div>
+      <div style="margin-top:12px"><label for="notes">Update message</label><textarea id="notes" placeholder="A new version is available. Update if you want."></textarea></div>
+      <div class="actions"><button id="uploadBtn">Upload APK & publish notice</button></div>
+      <p class="muted">The APK is uploaded to Firebase Storage and update metadata is written to <code>appUpdate</code>. The client app must implement the matching notice logic. This panel does not install updates on users' phones.</p>
+    </section>
+  </main>
+  <p class="muted">SHINIGAMI KEY · Separate administrator interface</p>
+</div>
+<script>
+/*
+  SHINIGAMI KEY Firebase project configuration. Authentication uses Firebase Email/Password REST API; the Web App ID field is not used by this REST login.
+*/
+const FIREBASE = {
+  apiKey: "AIzaSyDX153zlUICaiBSO-FDNVPUdzuWO8Thr1M",
+  databaseURL: "https://shinigami-9df73-default-rtdb.firebaseio.com",
+  projectId: "shinigami-9df73",
+  storageBucket: "shinigami-9df73.firebasestorage.app",
+  webAppId: "NOT_REQUIRED_FOR_REST_AUTH"
+};
+const $ = id => document.getElementById(id);
+let idToken = null, currentUser = null;
+const dbBase = FIREBASE.databaseURL.replace(/\/$/,"");
+const ADMIN_USERNAME = "shinigamiadmin";
+const ADMIN_EMAIL = "subhook453@gmail.com";
+function message(text, kind="") { const el=$("connection"); el.textContent=text; el.className="status "+kind; }
+async function authRequest(method, body) {
+  const url=`https://identitytoolkit.googleapis.com/v1/accounts:${method}?key=${FIREBASE.apiKey}`;
+  const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const data=await r.json(); if(!r.ok) throw new Error(data.error?.message || "Authentication failed"); return data;
+}
+async function db(path, method="GET", value=null) {
+  if(!idToken) throw new Error("Please sign in first.");
+  const url=`${dbBase}/${path.replace(/^\/+/,"")}.json?auth=${encodeURIComponent(idToken)}`;
+  const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:value===null?undefined:JSON.stringify(value)});
+  const data=await r.json(); if(!r.ok) throw new Error(data.error?.message || "Database request failed"); return data;
+}
+async function signIn(){
+  try{
+    const username=$("username").value.trim();
+    if(username!==ADMIN_USERNAME) throw new Error("Invalid Admin Username.");
+    const data=await authRequest("signInWithPassword",{email:ADMIN_EMAIL,password:$("password").value,returnSecureToken:true});
+    idToken=data.idToken; currentUser=data; $("who").textContent=`Signed in: ${data.email} · UID: ${data.localId}`;
+    $("loginCard").classList.add("hidden"); $("dashboard").classList.remove("hidden");
+    message("Signed in. Firebase connection is active.", "ok"); await loadUsers();
+  }catch(e){message(e.message,"err");}
+}
+async function loadUsers(){
+  try{
+    const data=await db("users"); const tbody=$("users"); tbody.innerHTML="";
+    if(!data || typeof data!=="object"){tbody.innerHTML='<tr><td colspan="4">No users found.</td></tr>';return;}
+    Object.entries(data).forEach(([uid,u])=>{
+      const tr=document.createElement("tr");
+      const td1=document.createElement("td"),td2=document.createElement("td"),td3=document.createElement("td"),td4=document.createElement("td");
+      td1.textContent=uid;td2.textContent=u?.name||"—";
+      const pill=document.createElement("span");pill.className="pill "+(u?.status==="ACTIVE"?"active":"inactive");pill.textContent=u?.status||"INACTIVE";td3.append(pill);
+      const b=document.createElement("button");b.className="secondary smallbtn";b.textContent="Edit";b.onclick=()=>{$("userId").value=uid;$("userName").value=u?.name||"";$("userStatus").value=u?.status||"INACTIVE";};td4.append(b);
+      tr.append(td1,td2,td3,td4);tbody.append(tr);
+    });
+  }catch(e){message("Could not load users: "+e.message,"err");}
+}
+async function saveUser(){
+  const uid=$("userId").value.trim();
+  if(!/^[A-Za-z0-9_-]{1,80}$/.test(uid)){message("Use a User ID with letters, numbers, _ or - (max 80).","err");return;}
+  try{
+    await db(`users/${encodeURIComponent(uid)}`,"PUT",{name:$("userName").value.trim(),status:$("userStatus").value,updatedAt:Date.now()});
+    message("User saved successfully.","ok"); await loadUsers();
+  }catch(e){message("Save failed: "+e.message,"err");}
+}
+async function uploadApk(){
+  const file=$("apk").files[0], version=$("version").value.trim();
+  if(!file || !file.name.toLowerCase().endsWith(".apk")){message("Choose an APK file first.","err");return;}
+  if(!version){message("Enter a version name.","err");return;}
+  try{
+    $("uploadBtn").disabled=true; message("Uploading APK…");
+    const objectName=`releases/${encodeURIComponent(version)}.apk`;
+    const uploadUrl=`https://firebasestorage.googleapis.com/v0/b/${FIREBASE.storageBucket}/o?uploadType=media&name=${encodeURIComponent(objectName)}`;
+    const r=await fetch(uploadUrl,{method:"POST",headers:{"Authorization":`Bearer ${idToken}`,"Content-Type":"application/vnd.android.package-archive"},body:file});
+    const result=await r.json(); if(!r.ok) throw new Error(result.error?.message||"Storage upload failed");
+    const downloadUrl=`https://firebasestorage.googleapis.com/v0/b/${FIREBASE.storageBucket}/o/${encodeURIComponent(objectName)}?alt=media&token=${result.downloadTokens||""}`;
+    await db("appUpdate","PUT",{version,apkPath:objectName,downloadUrl,notes:$("notes").value.trim(),publishedAt:Date.now(),noticeEnabled:true});
+    message("APK uploaded and update notice published.","ok");
+  }catch(e){message("Upload failed: "+e.message,"err");}
+  finally{$("uploadBtn").disabled=false;}
+}
+$("loginBtn").onclick=signIn;
+$("logoutBtn").onclick=()=>{idToken=null;currentUser=null;$("dashboard").classList.add("hidden");$("loginCard").classList.remove("hidden");$("password").value="";message("Signed out.");};
+$("saveUserBtn").onclick=saveUser;$("refreshBtn").onclick=loadUsers;$("uploadBtn").onclick=uploadApk;
+</script>
+</body>
+</html>
